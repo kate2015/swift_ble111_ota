@@ -26,6 +26,66 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     @IBOutlet var dataTableView: UITableView!
     
     
+    // Alvin add here for trigger box
+    // step 1: enter DFU mode and reset
+    // step 2: reconnect the peripheral
+    // step 3: readDFUBlocks
+    // step 4: send and reset
+    var OTAStepArray = ["enter DFU mode","Reconnect","readDFUBlocks","OTA n reset"]
+    
+    enum BluegigaServices {
+        static let ota: String = "1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0";
+    }
+    
+    enum BluegigaCharacteristics {
+                static let control: String = "f7bf3564-fb6d-4e53-88a4-5e37e0326063";
+                static let dataNoAck: String = "984227f3-34fc-4045-a5d0-2c581f81a153";
+    }
+    
+    fileprivate func readDFUBlocks() {
+        
+        
+        //full or only app update?
+        let file = BallManager.shared.ball!.softwareVersion < Settings.shared.ballLastFullVersion ? Settings.shared.ballSoftwareFullFile : Settings.shared.ballSoftwareAppFile
+        //let file = Settings.shared.ballSoftwareFullFile
+        
+        print("Updating from: \(file)")
+        if let path =  Bundle.main.path(forResource: file, ofType: nil) {
+            if let fileData = try? Data(contentsOf: URL(fileURLWithPath: path)) {
+                
+                self.totalBytes = fileData.count //store total file size to calculate percentage
+                
+                self.blocks = [Data]()
+                var blockStart = 0
+                var blockSize = 0
+                while blockStart < fileData.count {
+                    blockSize = self.readBlockSize(data:fileData, start:blockStart) + OTAService.HEADER_LENGTH //16 is block header size
+                    
+                    print("Block Size: \(blockSize)")
+                    let range:Range<Data.Index> = Data.Index(blockStart)..<Data.Index(blockStart + blockSize)
+                    self.blocks!.append(fileData.subdata(in: range))
+                    
+                    blockStart = blockStart + blockSize
+                }
+            }
+        } else {
+            print("FILE NOT FOUND: \(file)")
+        }
+    }
+    
+    fileprivate func readBlockSize(data:Data, start:Int) -> Int {
+        var header = [UInt8](repeating: 0, count: OTAService.HEADER_LENGTH)
+        (data as NSData).getBytes(&header, range:NSMakeRange(start,OTAService.HEADER_LENGTH))
+        
+        var blockSize = UInt32(header[8]) & 0xff
+        blockSize = blockSize | ((UInt32(header[9]) << 8) & 0xff00)
+        blockSize = blockSize | ((UInt32(header[10]) << 16) & 0xff0000)
+        blockSize = blockSize | ((UInt32(header[11]) << 24) & 0xff000000)
+        
+        return Int(blockSize)
+    }
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         initAll()
@@ -103,6 +163,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
             // The first section, we put steps
+            return 4
             // Alvin add here for trigger box
             // step 1: enter DFU mode and reset
             // step 2: reconnect the peripheral
@@ -135,10 +196,13 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
             cell?.accessoryType = .disclosureIndicator
         }
         if (indexPath as NSIndexPath).section == 0 {
+            cell?.textLabel?.text = OTAStepArray[(indexPath as NSIndexPath).row]
+            /*
             cell?.textLabel?.text = CBAdvertisementData.getAdvertisementDataStringValue(lastAdvertisementData!, key: advertisementDataKeys![(indexPath as NSIndexPath).row])
             cell?.textLabel?.adjustsFontSizeToFitWidth = true
             
             cell?.detailTextLabel?.text = CBAdvertisementData.getAdvertisementDataName(advertisementDataKeys![(indexPath as NSIndexPath).row])
+            */
         } else {
             let characteristic = characteristicsDic[services![(indexPath as NSIndexPath).section - 1].uuid]![(indexPath as NSIndexPath).row]
             cell?.textLabel?.text = characteristic.name
@@ -158,6 +222,9 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
         view.addSubview(serviceNameLbl)
         
         if section == 0 {
+            serviceNameLbl.text = "TriggerBox OTA"
+
+            /*
             serviceNameLbl.text = "ADVERTISEMENT DATA"
             let showBtn = UIButton(type: .system)
             showBtn.frame = CGRect(x: UIScreen.main.bounds.size.width - 80, y: 20, width: 60, height: 20)
@@ -169,6 +236,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
 
             showBtn.addTarget(self, action: #selector(self.showAdvertisementDataBtnClick), for: .touchUpInside)
             view.addSubview(showBtn)
+            */
         } else {
             let service = bluetoothManager.connectedPeripheral!.services![section - 1]
             serviceNameLbl.text = service.name
@@ -184,6 +252,34 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if (indexPath as NSIndexPath).section == 0 {
+            // Alvin: do all Row selection here
+            let currentCell = tableView.cellForRow(at: indexPath)! as UITableViewCell
+            print(currentCell.textLabel!.text ?? "unknown")
+            
+            switch indexPath.row {
+                // step 1: enter DFU mode and reset
+                // step 2: reconnect the peripheral
+                // step 3: readDFUBlocks
+                // step 4: send and reset
+            case 0:  // Send DFU command
+                var resetCommand: UInt8 = 1
+                let resetData = NSData(bytes: &resetCommand, length: 1)
+
+                let characteristic = BluegigaCharacteristics.control
+                print( characteristic.name )
+                
+                bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: characteristic , type: .withoutResponse)
+                break
+            case 1:
+                bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral)
+                break
+            case 2:
+                // readDFUBlocks
+                
+                break
+            default: break
+            }
+            
             
         } else {
             print("Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")

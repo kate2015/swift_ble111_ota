@@ -1,5 +1,4 @@
 {
-  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "90d4392e-a73b-e84b-adc8-5bf58d4aafe1++6335",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
     "90d4392e-a73b-e84b-adc8-5bf58d4aafe1++6335" : {
 
@@ -10,11 +9,11 @@
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "20D96A11-2475-40D0-B2CE-D112A3B0CAD2",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
-    "90d4392e-a73b-e84b-adc8-5bf58d4aafe1++6335" : "Coding\/"
+    "90d4392e-a73b-e84b-adc8-5bf58d4aafe1++6335" : "..\/.."
   },
   "DVTSourceControlWorkspaceBlueprintNameKey" : "GetacOTA",
   "DVTSourceControlWorkspaceBlueprintVersion" : 204,
-  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Checkin\/TriggerBox\/Swift-LightBlue-master\/GetacOTA.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "GetacOTA.xcodeproj",
   "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
     {
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/10.68.91.54:8443\/svn\/APPs",

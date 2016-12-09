@@ -78,7 +78,6 @@ class MainController: UIViewController, UITableViewDelegate, UITableViewDataSour
         connectingView?.tipNameLbl.text = peripheral.name
         bluetoothManager.connectPeripheral(peripheral)
         bluetoothManager.stopScanPeripheral()
-
     }
     
     // MARK： UITableViewDataSource
