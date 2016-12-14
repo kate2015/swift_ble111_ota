@@ -9,12 +9,17 @@
 import UIKit
 import CoreBluetooth 
 
-class PeripheralController : UIViewController, UITableViewDelegate, UITableViewDataSource, BluetoothDelegate {
+class PeripheralController : UIViewController, UITableViewDelegate, UITableViewDataSource ,BluetoothDelegate {
     
+
     fileprivate let bluetoothManager = BluetoothManager.getInstance()
     fileprivate var showAdvertisementData = false
     fileprivate var services : [CBService]?
     fileprivate var characteristicsDic = [CBUUID : [CBCharacteristic]]()
+    
+    //nita1213
+    var characteristic: CBCharacteristic?
+    var writeType: CBCharacteristicWriteType?
     
     var lastAdvertisementData : Dictionary<String, AnyObject>?
     fileprivate var advertisementDataKeys : [String]?
@@ -33,6 +38,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     // step 4: send and reset
     var OTAStepArray = ["enter DFU mode","Reconnect","readDFUBlocks","OTA n reset"]
     
+    
     enum BluegigaServices {
         static let ota: String = "1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0";
     }
@@ -42,6 +48,16 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
                 static let dataNoAck: String = "984227f3-34fc-4045-a5d0-2c581f81a153";
     }
     
+    
+    //let kServiceUUID = [CBUUID(string:"1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0")]
+    //let kCharacteristicc_contorlUUID = [CBUUID(string:"f7bf3564-fb6d-4e53-88a4-5e37e0326063")]
+    
+
+    /* Nita 1213
+    Discovered characteristic: <CBCharacteristic: 0X16D576E0, UUID = f7bf3564-fb6d-4e53-88a4-5e37e0326063, properties = 0x2, value = (null), notifying = NO>
+*/
+ 
+    /*---------------------------------------------------
     fileprivate func readDFUBlocks() {
         
         
@@ -54,12 +70,11 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
             if let fileData = try? Data(contentsOf: URL(fileURLWithPath: path)) {
                 
                 self.totalBytes = fileData.count //store total file size to calculate percentage
-                
                 self.blocks = [Data]()
                 var blockStart = 0
                 var blockSize = 0
                 while blockStart < fileData.count {
-                    blockSize = self.readBlockSize(data:fileData, start:blockStart) + OTAService.HEADER_LENGTH //16 is block header size
+                    blockSize = self.readBlockSize(data:fileData, start:blockStart) + CBService.HEADER_LENGTH //16 is block header size
                     
                     print("Block Size: \(blockSize)")
                     let range:Range<Data.Index> = Data.Index(blockStart)..<Data.Index(blockStart + blockSize)
@@ -74,8 +89,8 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     }
     
     fileprivate func readBlockSize(data:Data, start:Int) -> Int {
-        var header = [UInt8](repeating: 0, count: OTAService.HEADER_LENGTH)
-        (data as NSData).getBytes(&header, range:NSMakeRange(start,OTAService.HEADER_LENGTH))
+        var header = [UInt8](repeating: 0, count: CBService.HEADER_LENGTH)
+        (data as NSData).getBytes(&header, range:NSMakeRange(start,CBService.HEADER_LENGTH))
         
         var blockSize = UInt32(header[8]) & 0xff
         blockSize = blockSize | ((UInt32(header[9]) << 8) & 0xff00)
@@ -84,7 +99,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
         
         return Int(blockSize)
     }
-    
+    */
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -262,16 +277,30 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
                 // step 3: readDFUBlocks
                 // step 4: send and reset
             case 0:  // Send DFU command
-                var resetCommand: UInt8 = 1
-                let resetData = NSData(bytes: &resetCommand, length: 1)
-
-                let characteristic = BluegigaCharacteristics.control
-                print( characteristic.name )
+                //var resetCommand: UInt8 = 1
                 
-                bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: characteristic , type: .withoutResponse)
+                //let resetData = NSData(bytes: &resetCommand, length: 1)
+                print("Nitaa Enter DFU mode++")
+
+                bluetoothManager.delegate = self
+                
+                var Data = BluegigaCharacteristics.control
+                
+                if Data.characters.count % 2 != 0 {
+                    Data = "0" + Data
+                }
+                
+                let resetData = Data.dataFromHexadecimalString()
+                
+                //bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: characteristic , type: .withoutResponse)
+                //self.bluetoothManager.writeValue(data: resetData!, forCahracteristic: self.characteristic! , type: self.writeType!)
+                self.bluetoothManager.writeValue(data: resetData!, forCahracteristic: self.characteristic! , type: .withoutResponse)
+                
+                print("Nitaa Enter DFU mode--")
+            
                 break
             case 1:
-                bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral)
+                bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral!)
                 break
             case 2:
                 // readDFUBlocks
@@ -288,6 +317,16 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
             self.navigationController?.pushViewController(controller, animated: true)
         }
     }
+    
+    /*  ----------------------------------------------------  */
+    func toByteArray<T>( value: T) -> [UInt8] {
+        var data = [UInt8](repeating: 0, count: MemoryLayout<T>.size)
+        data.withUnsafeMutableBufferPointer {
+            UnsafeMutableRawPointer($0.baseAddress!).storeBytes(of: value, as: T.self)
+        }
+        return data
+    }
+    
     
     // MARK: BluetoothDelegate
     func didDisconnectPeripheral(_ peripheral: CBPeripheral) {

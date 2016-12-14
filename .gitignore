@@ -1,6 +1,6 @@
 #Ignore generated xcode project files
 
-GetacOTA.xcodeproj/project.xcworkspace/xcshareddata/GetacOTA.xcscmblueprint
+*.GetacOTA.xcscmblueprint
 *.UserInterfaceState.xcuserstate
 	
 GetacOTA.xcodeproj/xcuserdata/alvin.xcuserdatad/xcdebugger/
