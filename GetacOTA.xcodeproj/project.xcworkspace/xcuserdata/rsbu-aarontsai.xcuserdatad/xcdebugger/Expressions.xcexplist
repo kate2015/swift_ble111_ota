@@ -8,6 +8,9 @@
             <PersistentString
                value = "characteristic">
             </PersistentString>
+            <PersistentString
+               value = "characteristicsDic">
+            </PersistentString>
          </PersistentStrings>
       </ContextState>
    </ContextStates>

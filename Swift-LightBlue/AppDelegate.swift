@@ -22,7 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func handleNotification(_ notif: Notification) {
         switch notif.name {
         case NSNotification.Name(rawValue: PeripheralNotificationKeys.DisconnectNotif.rawValue):
-            print("\(PeripheralNotificationKeys.DisconnectNotif.rawValue)")
+            print("nitaa \(PeripheralNotificationKeys.DisconnectNotif.rawValue)")
             if let topController = UIApplication.topViewController() {
                 AlertUtil.showCancelAlert("Disconnected Alert", message: "The peripheral has disconnected", cancelTitle: "Dismiss", viewController: topController)
             }
