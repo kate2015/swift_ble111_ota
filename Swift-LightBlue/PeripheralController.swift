@@ -10,8 +10,8 @@ import UIKit
 import CoreBluetooth
 
 let bluegigaServices = "1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0"
-let bluegigaControl = "f7bf3564-fb6d-4e53-88a4-5e37e0326063"
-let bluegigadataNoAck = "984227f3-34fc-4045-a5d0-2c581f81a153"
+let bluegigaControl = "0xF7BF3564-FB6D-4E53-88A4-5E37E0326063"
+let bluegigadataNoAck = "0x984227F3-34FC-4045-A5D0-2C581f81A153"
 
 class PeripheralController : UIViewController, UITableViewDelegate, UITableViewDataSource ,BluetoothDelegate {
     
@@ -22,8 +22,8 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     fileprivate var characteristicsDic = [CBUUID : [CBCharacteristic]]()
     
     //nitaa1213
-    var characteristic: CBCharacteristic!
-    var writeType: CBCharacteristicWriteType?
+    //var characteristic: CBCharacteristic!
+    //var writeType: CBCharacteristicWriteType?
     
     var lastAdvertisementData : Dictionary<String, AnyObject>?
     fileprivate var advertisementDataKeys : [String]?
@@ -53,16 +53,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
          static let dataNoAck: String = "984227f3-34fc-4045-a5d0-2c581f81a153";
     }
     
-    //Nitaa
-    
-    //let kServiceUUID = [CBUUID(string:"1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0")]
-    //let kCharacteristicc_contorlUUID = [CBUUID(string:"f7bf3564-fb6d-4e53-88a4-5e37e0326063")]
-    
 
-    //Nitaa 1213
-    //Discovered characteristic: <CBCharacteristic: 0X16D576E0, UUID = f7bf3564-fb6d-4e53-88a4-5e37e0326063, properties = 0x2, value = (null), notifying = NO>
-
- 
     /*---------------------------------------------------
     fileprivate func readDFUBlocks() {
         
@@ -206,7 +197,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
  
         }
         let characteristics = characteristicsDic[services![section - 1].uuid]
-        //print("nitaa !:\(characteristics)")
+        print("nitaa !:\(characteristics)")
         return characteristics == nil ? 0 : characteristics!.count
     }
     
@@ -242,8 +233,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
             cell?.textLabel?.text = characteristic.name
             cell?.detailTextLabel?.text = getPropertiesFromArray(characteristic.getProperties())
             
-            print("nitaa@ \(characteristic.name) ")
-            
+            print("nitaa@ \(characteristic.name)")
             print("nitaa@@ \(cell?.detailTextLabel?.text) \n")
         }
         return cell!
@@ -290,7 +280,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     // Need overide this method for fix start section from 1(not 0) in the method 'tableView:viewForHeaderInSection:' after iOS 7
     /*  ----------------------------------------------------  */
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        print("nitaa 2 section:\(section)")
+        //print("nitaa 2 section:\(section)")
         return 60
     }
     
@@ -319,59 +309,27 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
                 
                 let resetData = NSData(bytes: &resetCommand, length: 1)
                 print("Nitaa Enter DFU mode++")
-
-                //bluetoothManager.delegate = self
                 
-                
-                //bluetoothManager.discoverDescriptor(characteristic!)
-                
-                //var     = BluegigaCharacteristics.control
-                /*
-                if Data.characters.count % 2 != 0 {
-                    Data = "0" + Data
-                }
-                
-                let resetData = Data.dataFromHexadecimalString()*/
                 
                 let controller = CharacteristicController()
-                controller.characteristic = characteristicsDic[services![(indexPath as NSIndexPath).section - 1].uuid]![(indexPath as NSIndexPath).row]
-                //controller.characteristic?.uuid.uuidString = BluegigaCharacteristics.control
-                self.navigationController?.pushViewController(controller, animated: true)
                 
                 
-                /*
-                for i in 0..<
-                characteristic = characteristicsDic[services![(indexPath as NSIndexPath).section - 1].uuid]![(indexPath as NSIndexPath).row]
-                if (controller.characteristic?.name == bluegigaControl)
-                {
-                    bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: characteristic, type: .withoutResponse)
+                for i in 0..<services!.count {
+                    controller.characteristic = characteristicsDic[services![i].uuid]![(indexPath as NSIndexPath).row]
+                    if (controller.characteristic?.name == bluegigaControl)
+                    {
+                        bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                        print("nitaa")
+                    }
                 }
-                */
 
-                
-                //self.bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: self.transferCharacteristic , type: self.writeType!)
-                //let readV = self.bluetoothManager.readValueForCharacteristic(characteristic: self.characteristic!)
-                //print("nitaa\(readV)")
-                //self.bluetoothManager.writeValue(data: resetData!, forCahracteristic: self.characteristic! , type: .withoutResponse)
-                
-                /*
-                var i: Int = 0
-                for characteristic in characteristicsDic[services as [CBService(indexPath as NSIndexPath).section - 1].uuid]{[(indexPath as NSIndexPath).row]} {
-                 println("服务的UUID:\(service.UUID)")
-                    i++
-                    //发现给定格式的服务的特性
-                    //            if (service.UUID == CBUUID(string:"FFE0")) {
-                    //                peripheral.discoverCharacteristics(kCharacteristicUUID, forService: service as CBService)
-                    //            }
-                            //peripheral.discoverCharacteristics(nil, forService: service as! CBService)
-                }*/
                 print("Nitaa Enter DFU mode--")
             
                 break
             case 1:
                 print("nitaa did select :: Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")
                 
-                //bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral!)
+                bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral!)
                 break
             case 2:
                 print("nitaa did select :: Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")
