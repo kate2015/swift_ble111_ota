@@ -1,12 +1,11 @@
 #Ignore generated xcode project files
 
 *.GetacOTA.xcscmblueprint
-*.UserInterfaceState.xcuserstate
 	
 GetacOTA.xcodeproj/xcuserdata/alvin.xcuserdatad/xcdebugger/
 
+*.UserInterfaceState.xcuserstate
 
-
-
+GetacOTA.xcodeproj/xcuserdata/rsbu-aarontsai.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
 
 
