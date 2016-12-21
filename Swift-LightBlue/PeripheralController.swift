@@ -9,9 +9,9 @@
 import UIKit
 import CoreBluetooth
 
-let bluegigaServices = "1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0"
-let bluegigaControl = "0xF7BF3564-FB6D-4E53-88A4-5E37E0326063"
-let bluegigadataNoAck = "0x984227F3-34FC-4045-A5D0-2C581f81A153"
+let BLUE_GIGA_SERVICES = "1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0"
+let BLUE_GIGA_CONTROL_TX = "0xF7BF3564-FB6D-4E53-88A4-5E37E0326063"
+let BLUE_GIGA_DATANOACK_RX = "0x984227F3-34FC-4045-A5D0-2C581f81A153"
 
 class PeripheralController : UIViewController, UITableViewDelegate, UITableViewDataSource ,BluetoothDelegate {
     
@@ -316,7 +316,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
                 
                 for i in 0..<services!.count {
                     controller.characteristic = characteristicsDic[services![i].uuid]![(indexPath as NSIndexPath).row]
-                    if (controller.characteristic?.name == bluegigaControl)
+                    if (controller.characteristic?.name == BLUE_GIGA_CONTROL_TX)
                     {
                         bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: controller.characteristic!, type: .withoutResponse)
                         print("nitaa")
@@ -327,13 +327,16 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
             
                 break
             case 1:
-                print("nitaa did select :: Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")
+                print("nitaa reconnect +)")
                 
                 bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral!)
+                print("nitaa reconnect -")
                 break
             case 2:
                 print("nitaa did select :: Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")
                 // readDFUBlocks
+                
+                //BlueteethUtils
                 
                 break
             default: break
@@ -374,6 +377,18 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
         print("nitaa:\(characteristicsDic[service.uuid])")
         reloadTableView()
     }
+    
+    /**
+     The callback function when central manager connected the peripheral successfully.
+     
+     - parameter connectedPeripheral: The peripheral which connected successfully.
+     */
+    func didConnectedPeripheral(_ connectedPeripheral: CBPeripheral) {
+        print("MainController --> didConnectedPeripheral")
+        connectFlagLbl.text = "Interrogating..."
+        connectFlagLbl.textColor = UIColor.blue
+    }
+    
     
 }
 
