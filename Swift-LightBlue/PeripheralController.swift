@@ -8,10 +8,12 @@
 
 import UIKit
 import CoreBluetooth
+import Foundation
 
-let BLUE_GIGA_SERVICES = "1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0"
+let BLUE_GIGA_SERVICES = "0x1d14d6ee-fd63-4fa1-bfa4-8f47b42119f0"
 let BLUE_GIGA_CONTROL_TX = "0xF7BF3564-FB6D-4E53-88A4-5E37E0326063"
-let BLUE_GIGA_DATANOACK_RX = "0x984227F3-34FC-4045-A5D0-2C581f81A153"
+let BLUE_GIGA_DATANOACK_RX = "0x984227F3-34FC-4045-A5D0-2C581F81A153"
+
 
 class PeripheralController : UIViewController, UITableViewDelegate, UITableViewDataSource ,BluetoothDelegate {
     
@@ -21,6 +23,11 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     fileprivate var services : [CBService]?
     fileprivate var characteristicsDic = [CBUUID : [CBCharacteristic]]()
     
+    //nita
+    fileprivate var totalBytes: Int = 0
+    fileprivate var packetsize: Int = 20
+    fileprivate var blocks: [Data]?
+
     //nitaa1213
     //var characteristic: CBCharacteristic!
     //var writeType: CBCharacteristicWriteType?
@@ -53,51 +60,82 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
          static let dataNoAck: String = "984227f3-34fc-4045-a5d0-2c581f81a153";
     }
     
-
+    struct dFU_header{
+        var code_crc :Int32
+        var header_crc : Int32
+        var length : Int32
+        var type :Int32
+    }
+    
+    fileprivate var totalNumberOfPackets: Int = 0
+    fileprivate var currentPacket: Int = 0
+    //fileprivate var fileData: NSData = NSData()
+    
+    
     /*---------------------------------------------------
-    fileprivate func readDFUBlocks() {
+    fileprivate func readDFUBlocks() -> Data {
         
-        
-        //full or only app update?
-        let file = BallManager.shared.ball!.softwareVersion < Settings.shared.ballLastFullVersion ? Settings.shared.ballSoftwareFullFile : Settings.shared.ballSoftwareAppFile
-        //let file = Settings.shared.ballSoftwareFullFile
-        
-        print("Updating from: \(file)")
-        if let path =  Bundle.main.path(forResource: file, ofType: nil) {
-            if let fileData = try? Data(contentsOf: URL(fileURLWithPath: path)) {
+        if let firmwarePath = Bundle.main.path(forResource: "ota_proj_1app", ofType: ".dfu", inDirectory: ".") {
+            if let fileData = try? Data(contentsOf: URL(fileURLWithPath: firmwarePath)) {
                 
-                self.totalBytes = fileData.count //store total file size to calculate percentage
-                self.blocks = [Data]()
+                print("Updating from: \(firmwarePath)")
+                totalBytes = fileData.count //store total file size to calculate percentage
+                blocks = [Data]()
+                //packetsize = fileData.count / totalBytes
+                
+                
                 var blockStart = 0
                 var blockSize = 0
+                
                 while blockStart < fileData.count {
-                    blockSize = self.readBlockSize(data:fileData, start:blockStart) + CBService.HEADER_LENGTH //16 is block header size
-                    
-                    print("Block Size: \(blockSize)")
+                    blockSize = self.readBlockSize(data:fileData, start:blockStart) //+ OTAservice.length //16 is block header size
+                    print("readDFUblock Block : \(blockStart)")
                     let range:Range<Data.Index> = Data.Index(blockStart)..<Data.Index(blockStart + blockSize)
-                    self.blocks!.append(fileData.subdata(in: range))
+                    blocks!.append(fileData.subdata(in: range))
                     
                     blockStart = blockStart + blockSize
                 }
+                
+                print("Update data finished...Nita")
             }
         } else {
-            print("FILE NOT FOUND: \(file)")
+            print("FILE NOT FOUND:")
         }
+        return Data.blocks
     }
     
+    
     fileprivate func readBlockSize(data:Data, start:Int) -> Int {
-        var header = [UInt8](repeating: 0, count: CBService.HEADER_LENGTH)
-        (data as NSData).getBytes(&header, range:NSMakeRange(start,CBService.HEADER_LENGTH))
+        var header = [UInt8](repeating: 0, count:MemoryLayout<dFU_header>.size)
+        (data as NSData).getBytes(&header, range:NSMakeRange(start,MemoryLayout<dFU_header>.size))
         
-        var blockSize = UInt32(header[8]) & 0xff
+        /*var blockSize = UInt32(header[8]) & 0xff
         blockSize = blockSize | ((UInt32(header[9]) << 8) & 0xff00)
         blockSize = blockSize | ((UInt32(header[10]) << 16) & 0xff0000)
-        blockSize = blockSize | ((UInt32(header[11]) << 24) & 0xff000000)
+        blockSize = blockSize | ((UInt32(header[11]) << 24) & 0xff000000)*/
+        
+        let blockSize = 20
         
         return Int(blockSize)
     }
-    */
+ 
+    ---------------------------------------------------*/
     
+    /*
+     byte[] data;
+     boolean sendReset = mOtaSource.exhausted();
+     if (sendReset) {
+     data = new byte[]{0x03};
+     mPeripheral.writeCharacteristic(data, CHARACTERISTIC_CONTROL_NO_ACK, SERVICE_OTA, response -> mOnFirmwareUpdateCompleteListener.call());
+     } else {
+     data = mOtaSource.readByteArray(PACKET_SIZE);
+     mPeripheral.writeCharacteristic(data, CHARACTERISTIC_DATA_NO_ACK, SERVICE_OTA, response -> {
+     mOnFirmwarePacketUploadedListener.call();
+     mHandler.postDelayed(uploadNextPacket, 50);
+     });
+     }
+     */
+
     override func viewDidLoad() {
         super.viewDidLoad()
         initAll()
@@ -288,6 +326,8 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         //print("nitaa1 section:\(section)")
+        let controller = CharacteristicController()
+        
         
         if (indexPath as NSIndexPath).section == 0 {
             // Alvin: do all Row selection here
@@ -295,6 +335,8 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
             
             let currentCell = tableView.cellForRow(at: indexPath)! as UITableViewCell
             print(currentCell.textLabel!.text ?? "unknown")
+            
+            
             
             switch indexPath.row {
                 // step 1: enter DFU mode and reset
@@ -305,20 +347,17 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
                 
                 print("nitaa did select :: Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")
                 
-                var resetCommand: UInt8 = 1
-                
+                var resetCommand: UInt8 = 0x3
                 let resetData = NSData(bytes: &resetCommand, length: 1)
                 print("Nitaa Enter DFU mode++")
-                
-                
-                let controller = CharacteristicController()
                 
                 
                 for i in 0..<services!.count {
                     controller.characteristic = characteristicsDic[services![i].uuid]![(indexPath as NSIndexPath).row]
                     if (controller.characteristic?.name == BLUE_GIGA_CONTROL_TX)
                     {
-                        bluetoothManager.writeValue(data: resetData as Data, forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                        bluetoothManager.writeValue(data:resetData as Data, forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                        
                         print("nitaa")
                     }
                 }
@@ -327,16 +366,97 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
             
                 break
             case 1:
-                print("nitaa reconnect +)")
                 
-                bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral!)
-                print("nitaa reconnect -")
+                if let firmwarePath = Bundle.main.path(forResource: "ota_proj_1app", ofType: ".dfu", inDirectory: ".") {
+                    if let fileData = try? Data(contentsOf: URL(fileURLWithPath: firmwarePath)) {
+                        
+                        var blockStart = 0
+                        var blockSize = 0
+                        
+
+                        print("Updating from: \(firmwarePath)")
+                        
+                            //print("nitaa +++:\(self.currentPacket)")
+                            for i in 0..<services!.count {
+                                controller.characteristic = characteristicsDic[services![i].uuid]![(indexPath as NSIndexPath).row]
+                                //print("nitaa +\(controller.characteristic?.uuid)")
+                                if (controller.characteristic?.name == BLUE_GIGA_DATANOACK_RX)
+                                {
+                                    print("nitaa ++\(controller.characteristic?.uuid)")
+                                    
+                                    /*
+                                    if (blockStart == fileData.count){
+                                        var resetCommand: UInt8 = 0x3
+                                        let resetData = NSData(bytes: &resetCommand, length: 1)
+                                        
+                                        bluetoothManager.writeValue(data:resetData as Data,  forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                                    
+                                    }else{
+                                        blockSize = 20
+                                        //self.readBlockSize(data:fileData, start:blockStart) //+ OTAservice.length //16 is block header size
+                                        print("readDFUblock Block : \(blockStart)")
+                                        let range:Range<Data.Index> = Data.Index(blockStart)..<Data.Index(blockStart + blockSize)
+                                        
+                                        let nextpacket = fileData.subdata(in: range)
+                                        
+                                        bluetoothManager.writeValue(data:nextpacket, forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                                        
+                                        
+                                        blockStart = blockStart + blockSize
+                                    
+                                    }*/
+                                    while blockStart < fileData.count {
+                                        blockSize = 20
+                                            //self.readBlockSize(data:fileData, start:blockStart) //+ OTAservice.length //16 is block header size
+                                        print("readDFUblock Block : \(blockStart)")
+                                        let range:Range<Data.Index> = Data.Index(blockStart)..<Data.Index(blockStart + blockSize)
+                                        //blocks!.append(fileData.subdata(in: range))
+                                        
+                                        let nextpacket = fileData.subdata(in: range)
+                                        
+                                        bluetoothManager.writeValue(data:nextpacket, forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                                        
+                                        
+                                        blockStart += blockSize
+                                    }
+                                    
+                                    print("update data finished...Nita")
+                                }
+                            }
+                        
+                        var resetCommand: UInt8 = 0x3
+                        let resetData = NSData(bytes: &resetCommand, length: 1)
+                        print("Nitaa Reconnected ++ ")
+                        
+                        bluetoothManager.writeValue(data:resetData as Data, forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                        
+                        print("Nitaa Reconnected--")
+                    }
+                } else {
+                    print("FILE NOT FOUND:")
+                }
+                
                 break
             case 2:
                 print("nitaa did select :: Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")
-                // readDFUBlocks
                 
-                //BlueteethUtils
+                //bluetoothManager.connectPeripheral(bluetoothManager.connectedPeripheral!)
+                var resetCommand: UInt8 = 0x3
+                let resetData = NSData(bytes: &resetCommand, length: 1)
+                print("Nitaa Reconnected ++ ")
+                
+                
+                for i in 0..<services!.count {
+                    controller.characteristic = characteristicsDic[services![i].uuid]![(indexPath as NSIndexPath).row]
+                    if (controller.characteristic?.name == BLUE_GIGA_CONTROL_TX)
+                    {
+                        bluetoothManager.writeValue(data:resetData as Data, forCahracteristic: controller.characteristic!, type: .withoutResponse)
+                        
+                        print("nitaa")
+                    }
+                }
+                
+                print("Nitaa Reconnected--")
                 
                 break
             default: break
@@ -346,7 +466,7 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
         } else {
             //Edit UUID writeValue
             print("Click at section: \((indexPath as NSIndexPath).section), row: \((indexPath as NSIndexPath).row)")
-            let controller = CharacteristicController()
+            //let controller = CharacteristicController()
             controller.characteristic = characteristicsDic[services![(indexPath as NSIndexPath).section - 1].uuid]![(indexPath as NSIndexPath).row]
             self.navigationController?.pushViewController(controller, animated: true)
         }
@@ -354,14 +474,6 @@ class PeripheralController : UIViewController, UITableViewDelegate, UITableViewD
     }
     
     /*  ----------------------------------------------------  */
-    func toByteArray<T>( value: T) -> [UInt8] {
-        var data = [UInt8](repeating: 0, count: MemoryLayout<T>.size)
-        data.withUnsafeMutableBufferPointer {
-            UnsafeMutableRawPointer($0.baseAddress!).storeBytes(of: value, as: T.self)
-        }
-        return data
-    }
-    
     
     // MARK: BluetoothDelegate
     func didDisconnectPeripheral(_ peripheral: CBPeripheral) {

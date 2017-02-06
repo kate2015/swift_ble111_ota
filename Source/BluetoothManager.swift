@@ -181,6 +181,7 @@ public class BluetoothManager : NSObject, CBCentralManagerDelegate, CBPeripheral
      */
     func writeValue(data: Data, forCahracteristic characteristic: CBCharacteristic, type: CBCharacteristicWriteType) {
         if connectedPeripheral == nil {
+            print("connected fail..............")
             return
         }
         connectedPeripheral?.writeValue(data, for: characteristic, type: type)
